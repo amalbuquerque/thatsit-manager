@@ -24,7 +24,85 @@ def log_test():
     logger.debug("DEBUG WELL")
     logger.warning("WARNING WELL")
 
-def upload():
+def manage_outdoor():
+    """
+    Action utilizada para gerir um outdoor
+    (seja operação de INSERT ou DELETE)
+    """
+    # tenta obter o outdoor com id passado por querystring: /id
+    # se nao existir, fica como None e o SQLFORM sera um INSERT
+    # form, se existir sera um UPDATE form
+    logger.debug("MANAGE_OUTDOOR CALLED")
+    record = db.outdoor(request.args(0))
+    form = SQLFORM(db.outdoor, record, deletable=False,\
+            submit_button='Gravar',\
+            # campos que queremos que sejam apresentados
+            fields=['name', 'description', 'ip', 'port'])
+
+    if form.process(keepvalues=True).accepted:
+        response.flash = 'submetido com sucesso'
+    elif form.errors:
+        response.flash = 'formulário com erros'
+    return dict(form=form)
+
+def associate_outdoor_spot():
+    """
+    Action utilizada para associar um outdoor a um
+    ou mais spots
+    """
+    logger.debug("ASSOCIATE_OUTDOOR_SPOT CALLED")
+    # se nao conseguir obter o outdoor, redirecciona por agora para o index
+    record = db.outdoor(request.args(0)) or redirect(URL('index'))
+
+    form = FORM(TABLE(
+        TR('Outdoor:', record.name),
+        TR('Description:', record.description),
+        TR('IP:Port:', record.ip + ':' + str(record.port)),
+        TR('Live at:', record.liveat),
+        TR('Last spot seen:', record.lastspotseen),
+        TR('', INPUT(_type='submit', _value='Gravar'))
+        ))
+
+    # apresentar os que ja foram carregados
+    form[0].insert(-1, TR('Carregados:', ''))
+    outdoor_spots = outdoors_and_spots(db.outdoor.name==record.name).select()
+    spot_row = 1
+    for temp_spot in outdoor_spots:
+        to_add = TR(str(spot_row) + '.', temp_spot.filename)
+        form[0].insert(-1, to_add)
+        spot_row += 1
+
+
+    form[0].insert(-1, TR('Para carregar:', ''))
+    all_spots = db(db.spot).select()
+    for temp_spot in all_spots:
+        if temp_spot not in outdoor_spots:
+            to_add = TR('Spot ' + temp_spot.filename + ':', \
+                          INPUT(_type='checkbox', _name= \
+                          'cbspot_' + temp_spot.filename))
+            form[0].insert(-1, to_add)
+    
+
+    # o process() trata de guardar na BD
+    # depois de validar todos os requisitos definidos
+    # para cada um dos campos
+    if form.process(keepvalues=True).accepted:
+        for input_control in request.post_vars:
+            # se for uma checkbox dos spots
+            # so estao nos request.post_vars
+            # se as checkboxes estivessem seleccionadas
+            if 'cbspot' in input_control:
+                cbval = 'false'
+                if form.vars[input_control] != None:
+                    cbval = 'true'
+                logger.debug('Valor da checkbox ' + input_control + ': ' + cbval)
+
+        response.flash = 'submetido com sucesso'
+    elif form.errors:
+        response.flash = 'formulário com erros'
+    return dict(form=form)
+
+def manage_spot():
     """
     Action utilizada inicialmente para apresentar
     o Form, e onde este vem bater depois de submetido.
@@ -34,7 +112,7 @@ def upload():
     # tenta obter o spot com id passado por querystring: /id
     # se nao existir, fica como None e o SQLFORM sera um INSERT
     # form, se existir sera um UPDATE form
-    logger.debug("UPLOAD CALLED")
+    logger.debug("MANAGE_SPOT CALLED")
     record = db.spot(request.args(0))
     form = SQLFORM(db.spot, record, deletable=False, upload=URL('download'),\
             submit_button='Gravar',\
@@ -47,14 +125,18 @@ def upload():
         logger.debug("Uploaded a file *{}* with {} bytes"\
                 .format(request.vars.movie.filename,\
                 len(request.vars.movie.value)))
-        # filename e preenchido pela action
+        # filename e preenchido nesta action
+        # com base no nome do ficheiro uploaded
         form.vars.filename = request.vars.movie.filename
         form.vars.timestamp = datetime.now()
 
-    if form.process().accepted:
-        response.flash = 'form accepted'
+    # o process() trata de guardar na BD
+    # depois de validar todos os requisitos definidos
+    # para cada um dos campos
+    if form.process(keepvalues=True).accepted:
+        response.flash = 'submetido com sucesso'
     elif form.errors:
-        response.flash = 'form has errors'
+        response.flash = 'formulário com erros'
     return dict(form=form)
 
 def download():
@@ -89,7 +171,7 @@ def upload_example_old():
            requires=IS_IN_SET(['yes', 'no']))),
         TR('Profile', TEXTAREA(_name='profile',
            value='write something here')),
-        TR('', INPUT(_type='submit', _value='SUBMIT')),
+        TR('', INPUT(_type='submit', _value='SUBMIT'))
         ))
 
     return dict(message = "test message from controller", form=form)

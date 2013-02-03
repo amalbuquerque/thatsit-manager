@@ -35,7 +35,6 @@ db.define_table(
     Field('description'),
     Field('ip', notnull=True),
     Field('port', 'integer', notnull=True),
-    Field('movie', 'upload'),
     Field('liveat', 'datetime'),
     Field('lastspotseen'),
     # how records of this table should be represented
@@ -49,7 +48,8 @@ db.outdoor.name.requires = [IS_NOT_EMPTY(), IS_NOT_IN_DB(db, 'outdoor.name')]
 
 db.define_table('uploadedto',
                     Field('outdoor', 'reference outdoor'),
-                    Field('spot', 'reference spot'))
+                    Field('spot', 'reference spot'),
+                    Field('uploaded_at', 'datetime'))
 
 # permite isto:
 # for out_spot in outdoors_and_spots(db.outdoor.name=='ericeira1').select():
