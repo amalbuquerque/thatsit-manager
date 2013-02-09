@@ -1,4 +1,5 @@
 from datetime import datetime
+import string
 
 def hello1():
     """ simple page without template """
@@ -65,21 +66,33 @@ def associate_outdoor_spot():
 
     # apresentar os que ja foram carregados
     form[0].insert(-1, TR('Carregados:', ''))
-    outdoor_spots = outdoors_and_spots(db.outdoor.name==record.name).select()
-    spot_row = 1
-    for temp_spot in outdoor_spots:
-        to_add = TR(str(spot_row) + '.', temp_spot.filename)
-        form[0].insert(-1, to_add)
-        spot_row += 1
 
+    outdoor_spots_db = outdoors_and_spots(db.outdoor.name==record.name)
+    outdoor_spots = outdoor_spots_db.select()
+    # :2013-02-09, AA: Para sabermos os que ja estavam associados
+    assoc_spots = [] 
+    for temp_assoc in outdoor_spots:
+        cbname_to_use = 'assspot_' + temp_assoc.spot.filename
+        to_add = TR('Spot ' + temp_assoc.spot.filename + ':', \
+                      INPUT(_type='checkbox', _name= \
+                      cbname_to_use, _checked=True))
+        assoc_spots.append(temp_assoc.spot.filename)
+        form[0].insert(-1, to_add)
+
+    # insere o hidden assoc_before
+    # para sabermos no POST o que estava seleccionado
+    # antes sem irmos a BD
+    form[0].insert(-1, INPUT(_type='hidden', \
+        _name='assoc_before',_value=string.join(assoc_spots, ';')))
 
     form[0].insert(-1, TR('Para carregar:', ''))
     all_spots = db(db.spot).select()
     for temp_spot in all_spots:
-        if temp_spot not in outdoor_spots:
+        # if temp_spot.filename not in outdoor_spots_db.select(db.spot.filename):
+        if temp_spot.filename not in assoc_spots:
             to_add = TR('Spot ' + temp_spot.filename + ':', \
                           INPUT(_type='checkbox', _name= \
-                          'cbspot_' + temp_spot.filename))
+                          'newspot_' + temp_spot.filename))
             form[0].insert(-1, to_add)
     
 
@@ -87,11 +100,20 @@ def associate_outdoor_spot():
     # depois de validar todos os requisitos definidos
     # para cada um dos campos
     if form.process(keepvalues=True).accepted:
+        if request.vars.assoc_before != None:
+            logger.debug('assoc_before *hidden*: ' + request.vars.assoc_before)
+        # TODO1: 2013-02-09
+        # Diferenca entre assoc_before.split(';') e
+        # e os assspot com value = true -> os que sobrarem
+        # devem ser apagados da outdoors_spots_db
         for input_control in request.post_vars:
-            # se for uma checkbox dos spots
-            # so estao nos request.post_vars
-            # se as checkboxes estivessem seleccionadas
-            if 'cbspot' in input_control:
+            # se for uma checkbox dos spots new
+            if 'newspot' in input_control:
+                # TODO2: 2013-02-09
+                # input_control e uma checkbox
+                # para aparecer aqui e porque estava a true
+                # logo deve ser criado registo
+                # em outdoors_spots_db
                 cbval = 'false'
                 if form.vars[input_control] != None:
                     cbval = 'true'
