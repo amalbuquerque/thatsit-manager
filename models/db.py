@@ -49,6 +49,7 @@ db.outdoor.name.requires = [IS_NOT_EMPTY(), IS_NOT_IN_DB(db, 'outdoor.name')]
 db.define_table('uploadedto',
                     Field('outdoor', 'reference outdoor'),
                     Field('spot', 'reference spot'),
+                    Field('to_delete', 'boolean'),
                     Field('uploaded_at', 'datetime'))
 
 # permite isto:
