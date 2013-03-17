@@ -1,5 +1,6 @@
 from datetime import datetime
 import string
+from manager_actions_helpers import *
 
 def hello1():
     """ simple page without template """
@@ -94,48 +95,16 @@ def associate_outdoor_spot():
                           INPUT(_type='checkbox', _name= \
                           'newspot_' + temp_spot.filename))
             form[0].insert(-1, to_add)
-    
 
     # o process() trata de guardar na BD
     # depois de validar todos os requisitos definidos
     # para cada um dos campos
     if form.process(keepvalues=True).accepted:
-        # TODO1: 2013-02-09
-        # Diferenca entre assoc_before.split(';')
-        # e os assspot com value = true -> os que sobrarem
-        # devem ser apagados da outdoors_spots_db
-        spots_to_delete = []
-        spots_to_maintain = []
-        new_spots_to_associate = []
-        for input_control in request.post_vars:
-            # se for uma checkbox dos spots associados previamente
-            if 'assspot' in input_control:
-                spots_to_maintain.append(input_control.replace('assspot_', ''))
-            # se for uma checkbox dos spots new
-            if 'newspot' in input_control:
-                new_spots_to_associate.append(input_control.replace('newspot_', ''))
-                # TODO2: 2013-02-09
-                # input_control e uma checkbox
-                # para aparecer aqui e porque estava a true
-                # logo deve ser criado registo
-                # em outdoors_spots_db
-                #cbval = 'false'
-                #if form.vars[input_control] != None:
-                    #cbval = 'true'
-                #logger.debug('Valor da checkbox ' + input_control + ': ' + cbval)
-
-        if request.vars.assoc_before != None:
-            for prev_spot in request.vars.assoc_before.split(';'):
-                if prev_spot not in spots_to_maintain:
-                    # deve ser apagado
-                    spots_to_delete.append(prev_spot)
-            logger.debug('assoc_before *hidden*: ' + request.vars.assoc_before)
-
-        logger.debug('Para manter: ' + string.join(spots_to_maintain, ','))
-        logger.debug('Para apagar: ' + string.join(spots_to_delete, ','))
-        logger.debug('Para associar (novos): ' + \
-                string.join(new_spots_to_associate, ','))
-        response.flash = 'submetido com sucesso'
+        handle_associate_outdoor_spot_post(request, logger)
+        # temos de colocar na session.flash em vez da response
+        # uma vez que o redirect provoca novo pedido por parte do cliente
+        session.flash = 'submetido com sucesso'
+        redirect(URL('associate_outdoor_spot', args=[record.id]))
     elif form.errors:
         response.flash = 'formulário com erros'
     return dict(form=form)
