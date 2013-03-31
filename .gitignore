@@ -13,6 +13,7 @@ uploads/*
 errors/*
 sessions/*
 cache/*
+progress.log
 var
 sdist
 develop-eggs
