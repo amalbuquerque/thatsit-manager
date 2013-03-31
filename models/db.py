@@ -50,6 +50,7 @@ db.define_table('uploadedto',
                     Field('outdoor', 'reference outdoor'),
                     Field('spot', 'reference spot'),
                     Field('to_delete', 'boolean'),
+                    Field('to_upload', 'boolean'),
                     Field('uploaded_at', 'datetime'))
 
 # permite isto:

@@ -85,6 +85,9 @@ def associate_outdoor_spot():
     # antes sem irmos a BD
     form[0].insert(-1, INPUT(_type='hidden', \
         _name='assoc_before',_value=string.join(assoc_spots, ';')))
+    # 2013-03-30: Id hidden para saber qual o outdoor em causa
+    form[0].insert(-1, INPUT(_type='hidden', \
+        _name='outdoor_to_assoc',_value=record.id))
 
     form[0].insert(-1, TR('Para carregar:', ''))
     all_spots = db(db.spot).select()
@@ -100,7 +103,8 @@ def associate_outdoor_spot():
     # depois de validar todos os requisitos definidos
     # para cada um dos campos
     if form.process(keepvalues=True).accepted:
-        handle_associate_outdoor_spot_post(request, logger)
+        handle_associate_outdoor_spot_post(request, logger, \
+                db, get, update_or_create)
         # temos de colocar na session.flash em vez da response
         # uma vez que o redirect provoca novo pedido por parte do cliente
         session.flash = 'submetido com sucesso'
